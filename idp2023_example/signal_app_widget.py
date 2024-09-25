@@ -1,8 +1,3 @@
-# SPDX-FileCopyrightText: 2023 Joni Hyttinen <joni.hyttinen@uef.fi>
-# SPDX-FileContributor: 2019 Martin Fitzpatrick
-#
-# SPDX-License-Identifier: MIT
-
 import numpy as np
 from PySide6.QtCore import QThreadPool, Signal, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton
@@ -15,7 +10,7 @@ from idp2023_example.worker import Worker
 class SignalAppWidget(QWidget):
     # Signals for SignalAnalyzer callbacks
     chart_set_axis_y = Signal(float, float)
-    chart_update_data = Signal(np.ndarray, np.ndarray)
+    chart_update_data = Signal(str, np.ndarray, np.ndarray)  # Include series name
 
     def __init__(self):
         super().__init__()
@@ -41,35 +36,32 @@ class SignalAppWidget(QWidget):
         self.layout.addWidget(self.stop_button)
         self.layout.addWidget(self.signal_window_chart)
 
-        # Prepare a thread pool and an instance of the signal analyzer.
         self.threadpool = QThreadPool()
-        self.signal_analyzer = SignalAnalyzer()
 
-    @Slot()
+        self.signal_analyzer = SignalAnalyzer("/Users/furkanozer/Desktop/IDP/group4.csv")
+
     def start_signal_analyser(self):
         """
         Starts a signal analyzer in a worker thread and connects the appropriate
         signals.
         """
-
-        # Create an instance of Worker that will run the signal analyzer's main
-        # loop when the thread is started. Pass the signal callbacks.
         worker = Worker(
             self.signal_analyzer.start,
             set_chart_axis_y=self.chart_set_axis_y,
             update_chart=self.chart_update_data,
         )
 
-        # Worker-class defines a "signals"-field that is a WorkerSignal-instance.
-        # Worker instances will emit following signals in response the
-        # runner-function (see Worker and WorkerSignals for their meanings).
-        #
-        # worker.signals.result.connect(self.print_output)
-        # worker.signals.finished.connect(self.thread_complete)
-        # worker.signals.progress.connect(self.progress_fn)
-
-        # Start the worker thread in the thread pool
+        worker.signals.result.connect(self.print_output)
+        worker.signals.error.connect(self.handle_worker_error)
         self.threadpool.start(worker)
+
+    def print_output(self, data):
+        print("Data sent to chart:", data)
+
+    def handle_worker_error(self, error):
+        exctype, value, traceback_str = error
+        print(f"Error in worker thread: {value}")
+        print(traceback_str)
 
     @Slot()
     def stop_signal_analyser(self):
