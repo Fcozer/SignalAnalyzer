@@ -56,6 +56,22 @@ class SignalAnalyzer:
         y_downsampled = y[:factor * num_points].reshape(-1, factor).mean(axis=1)
         return x_downsampled, y_downsampled
 
+    # Returns smoothed version of data using moving average.
+    # Adjust the window parameter to determine how many datapoints are used
+    # when calculating the average.
+    def calculate_moving_average(self, data, window_size):
+        if len(data) < window_size:
+            return
+        # We start counting averages only from the end of the original window.
+        # The beginning of averaged signal remains the same
+        averaged = data[:window_size-1]
+        i = window_size
+        while i < len(data):
+            start_index = i-window_size
+            averaged[i] = np.mean(data[start_index:i])
+            i += 1
+        return averaged
+
     def _generate_data_array(self) -> None:
         if self.data is None:
             return
