@@ -2,7 +2,8 @@ import numpy as np
 from PySide6.QtCore import QThreadPool, Signal, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 
-from idp2023_example.signal_analyzer import SignalAnalyzer
+from idp2023_example.data_reader import DataReader
+from idp2023_example.animation import Animation
 from idp2023_example.signal_window_chart_widget import SignalWindowChartWidget
 from idp2023_example.worker import Worker
 
@@ -36,9 +37,12 @@ class SignalAppWidget(QWidget):
         self.layout.addWidget(self.stop_button)
         self.layout.addWidget(self.signal_window_chart)
 
-        self.threadpool = QThreadPool()
+        # Instantiate data reader and animation (eventually?)
+        self.window = 1500000
+        self.data_reader = DataReader('../group4.csv', 10000, self.window)
+       # self.animation = Animation(self.window, self.data_reader)
 
-        self.signal_analyzer = SignalAnalyzer("../group4.csv")
+        self.threadpool = QThreadPool()
 
     def start_signal_analyser(self):
         """
@@ -46,7 +50,7 @@ class SignalAppWidget(QWidget):
         signals.
         """
         worker = Worker(
-            self.signal_analyzer.start,
+            self.data_reader.start,
             set_chart_axis_y=self.chart_set_axis_y,
             update_chart=self.chart_update_data,
         )
@@ -65,4 +69,4 @@ class SignalAppWidget(QWidget):
 
     @Slot()
     def stop_signal_analyser(self):
-        self.signal_analyzer.stop()
+        self.data_reader.stop()
