@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import Qt, Slot, QPointF
 from PySide6.QtGui import QPainter
