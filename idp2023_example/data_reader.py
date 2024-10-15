@@ -6,6 +6,11 @@ from idp2023_example.signal_analyzer import SignalAnalyzer
 
 
 class DataReader:
+    """
+    This class reads the given CSV file of signal data in predetermined chunks of size (rows_to_skip) into
+    a pandas DataFrame, transforms the signals with SignalAnalyzer class and returns the resulting DataFrame.
+
+    """
     def __init__(self, csv_file_path, rows_to_skip, window):
         self.running = False
         self.csv_file_path = csv_file_path
@@ -27,7 +32,6 @@ class DataReader:
         return self.first_data_chunk
 
     def get_signals_from_data_chunk(self):
-        # We will take 10000 rows at a time, so 1/5th of a second
         self.current_data_chunk = pd.read_csv(self.csv_file_path,
                                               skiprows=self.total_rows_skipped,
                                               nrows=self.rows_to_skip,
@@ -39,7 +43,7 @@ class DataReader:
             self.x_axis = list(np.arange(self.total_rows_skipped-self.rows_to_skip, self.total_rows_skipped))
             self.current_data_chunk['x_axis'] = self.x_axis
         else:
-            start = self.total_rows_skipped-self.window-10000
+            start = self.total_rows_skipped-self.window-self.rows_to_skip
             self.x_axis = list(np.arange(start, self.total_rows_skipped))
             self.current_data_chunk['x_axis'] = self.x_axis
 
