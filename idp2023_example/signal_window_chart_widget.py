@@ -9,6 +9,16 @@ class SignalWindowChartWidget(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.window = 100000 # determines max length of y1_points and y2_points
+        self.y1_points = None
+        self.y2_points = None
+
+        # Helpers for holding chart axis limit states
+        self.x_min = None
+        self.x_max = None
+        self.y_min = None
+        self.y_max = None
+
         self.series_dict = {}
         self.axis_x = QValueAxis()
         self.axis_y = QValueAxis()
@@ -48,16 +58,60 @@ class SignalWindowChartWidget(QWidget):
         series.attachAxis(self.axis_y)
         self.series_dict[name] = series
 
-    @Slot(str, np.ndarray, np.ndarray)
-    def replace_array(self, name: str, x: np.ndarray, y: np.ndarray):
-        print(f"replace_array called with series name: {name}, data length: {len(x)}")
+    def update_points(self, series, x, y, points_attr):
+        # Initialize x and y axis limits
+        if self.x_min is None:
+            self.x_min = float(x.min())
+            self.x_max = float(x.max())
+            self.y_min = float(y.min())
+            self.y_max = float(y.max())
+
+        points = getattr(self, points_attr)
+        if points is None:
+            points = [QPointF(float(xi), float(yi)) for xi, yi in zip(x, y)]
+            series.replace(points)
+        # If window size is not exceeded, concatenate arrays fully:
+        elif len(points) < self.window:
+            new_points = points + [QPointF(float(xi), float(yi)) for xi, yi in zip(x, y)]
+            series.replace(new_points)
+            points = new_points
+            self.x_max = float(x.values.max())
+            self.update_axes(y, 'y_min', 'y_max')
+        # Once data size exceeds window size, only use part of the old data:
+        else:
+            new_points = points[-self.window+10000:] + [QPointF(float(xi), float(yi)) for xi, yi in zip(x, y)]
+            # We need to adjust the window by the size of the coming data chunk. This is hardcoded for now:
+            # if you adjust data chunk size in DataReader, please change the above code accordingly.
+            series.replace(new_points)
+            points = new_points
+            self.x_min = float(points[0].x())
+            self.x_max = float(x.values.max())
+            self.update_axes(y, 'y_min', 'y_max')
+        setattr(self, points_attr, points)
+        # Apply axis updates to chart
+        self.axis_x.setMin(self.x_min)
+        self.axis_x.setMax(self.x_max)
+        self.axis_y.setMin(self.y_min)
+        self.axis_y.setMax(self.y_max)
+
+    # Helper function for finding minima and maxima between the two signals
+    def update_axes(self, axes, min_attr, max_attr):
+        current_min = getattr(self, min_attr)
+        current_max = getattr(self, max_attr)
+        min_candidate = float(axes.min())
+        max_candidate = float(axes.max())
+        if min_candidate < current_min:
+            setattr(self, min_attr, min_candidate)
+        if max_candidate > current_max:
+            setattr(self, max_attr, max_candidate)
+
+    # Replace existing chart with new data to plot
+    @Slot(str, np.ndarray, np.ndarray, int)
+    def replace_array(self, name: str, x: np.ndarray, y: np.ndarray, y_identity: int):
         if name not in self.series_dict:
             self.add_series(name)
         series = self.series_dict[name]
-        points = [QPointF(float(xi), float(yi)) for xi, yi in zip(x, y)]
-        series.replace(points)
-
-        self.axis_x.setMin(float(x.min()))
-        self.axis_x.setMax(float(x.max()))
-        self.axis_y.setMin(float(y.min()))
-        self.axis_y.setMax(float(y.max()))
+        if y_identity == 1:
+            self.update_points(series, x, y, 'y1_points')
+        elif y_identity == 2:
+            self.update_points(series, x, y, 'y2_points')
