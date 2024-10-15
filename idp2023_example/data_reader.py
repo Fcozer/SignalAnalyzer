@@ -79,10 +79,12 @@ class DataReader:
                 # Emit baseline-removed data
                 update_chart.emit("Sensor 1 - Baseline Removed",
                                   self.current_data_chunk['x_axis'],
-                                  self.current_data_chunk['adc1'])
+                                  self.current_data_chunk['adc1'],
+                                  1) # Signal identity number, adc1
                 update_chart.emit("Sensor 2 - Baseline Removed",
                                   self.current_data_chunk['x_axis'],
-                                  self.current_data_chunk['adc2'])
+                                  self.current_data_chunk['adc2'],
+                                  2)
 
         if progress_callback:
             progress_callback.emit(100)

@@ -3,15 +3,14 @@ from PySide6.QtCore import QThreadPool, Signal, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 
 from idp2023_example.data_reader import DataReader
-from idp2023_example.animation import Animation
 from idp2023_example.signal_window_chart_widget import SignalWindowChartWidget
 from idp2023_example.worker import Worker
 
 
 class SignalAppWidget(QWidget):
     # Signals for SignalAnalyzer callbacks
-    chart_set_axis_y = Signal(float, float)
-    chart_update_data = Signal(str, np.ndarray, np.ndarray)  # Include series name
+#    chart_set_axis_y = Signal(float, float)
+    chart_update_data = Signal(str, np.ndarray, np.ndarray, int)  # Include series name
 
     def __init__(self):
         super().__init__()
@@ -20,7 +19,7 @@ class SignalAppWidget(QWidget):
         self.signal_window_chart = SignalWindowChartWidget()
 
         # Connect the chart to the chart handling signals.
-        self.chart_set_axis_y.connect(self.signal_window_chart.set_axis_y)
+    #    self.chart_set_axis_y.connect(self.signal_window_chart.set_axis_y)
         self.chart_update_data.connect(self.signal_window_chart.replace_array)
 
         # Add buttons to start and stop the signal analyzer.
@@ -37,10 +36,8 @@ class SignalAppWidget(QWidget):
         self.layout.addWidget(self.stop_button)
         self.layout.addWidget(self.signal_window_chart)
 
-        # Instantiate data reader and animation (eventually?)
-        self.window = 1500000
+        self.window = 100000
         self.data_reader = DataReader('../group4.csv', 10000, self.window)
-       # self.animation = Animation(self.window, self.data_reader)
 
         self.threadpool = QThreadPool()
 
@@ -51,7 +48,7 @@ class SignalAppWidget(QWidget):
         """
         worker = Worker(
             self.data_reader.start,
-            set_chart_axis_y=self.chart_set_axis_y,
+          #  set_chart_axis_y=self.chart_set_axis_y,
             update_chart=self.chart_update_data,
         )
 
