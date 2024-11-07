@@ -32,6 +32,7 @@ class Worker(QRunnable):
     After the runner function has exited, regardless of success or failure,
     a finished signal is emitted. The finished signal will pass no data.
     """
+
     def __init__(self, fn, *args, **kwargs):
         super().__init__()
         self.fn = fn
