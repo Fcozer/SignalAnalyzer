@@ -41,6 +41,9 @@ class SignalAnalyzer:
         # Downsample the data
     #    num_points = 5000
     #    self.data['x_axis'], self.data['adc1'] = self.downsample(self.data['x_axis'], self.data['adc1'], num_points)
-    #    _, self.data['adc2'] = self.downsample(self.data['x_axis'], self.data['adc2'], num_points)
+    #    _, self.data['adc2'] = self.downsample(self.data['x_axis'], self.data['adc2'], num_points
+
+        # Peak finding
+        self.data['peak'] = self.data.apply(lambda row: self.find_peaks(row, self.data.mean(), self.data.std()), axis=1)
 
         return self.data

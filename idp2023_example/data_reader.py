@@ -20,15 +20,20 @@ class DataReader:
         self.x_axis = list(np.arange(self.total_rows_skipped))
         self.first_data_chunk = self.get_first_data_chunk()
         self.current_data_chunk = self.first_data_chunk
+        self.output_csv_filename = 'detections.csv'
+
+    def write_output_csv(self, dataframe):
+        output_data = dataframe.filter(items=['timedelta', 'peak'])
+        print(output_data.head())
 
     def get_first_data_chunk(self):
         self.first_data_chunk = pd.read_csv(self.csv_file_path, nrows=self.rows_to_skip)
         self.first_data_chunk['x_axis'] = self.x_axis
-
+        self.first_data_chunk['timedelta'] = pd.to_timedelta(self.first_data_chunk['x_axis']/50, unit='ms')
         # Use signal analyzer class for transforming dataframe contents
         signal_analyzer = SignalAnalyzer(self.first_data_chunk)
         self.first_data_chunk = signal_analyzer.transform_data()
-
+        self.write_output_csv(self.first_data_chunk)
         return self.first_data_chunk
 
     def get_signals_from_data_chunk(self):
@@ -42,10 +47,12 @@ class DataReader:
         if len(self.x_axis) < self.window:
             self.x_axis = list(np.arange(self.total_rows_skipped-self.rows_to_skip, self.total_rows_skipped))
             self.current_data_chunk['x_axis'] = self.x_axis
+            self.current_data_chunk['timedelta'] = pd.to_timedelta(self.current_data_chunk['x_axis']/50, unit='ms')
         else:
             start = self.total_rows_skipped-self.window-self.rows_to_skip
             self.x_axis = list(np.arange(start, self.total_rows_skipped))
             self.current_data_chunk['x_axis'] = self.x_axis
+            self.current_data_chunk['timedelta'] = pd.to_timedelta(self.current_data_chunk['x_axis']/50, unit='ms')
 
         # Use signal analyzer class for transforming dataframe contents
         signal_analyzer = SignalAnalyzer(self.current_data_chunk)
