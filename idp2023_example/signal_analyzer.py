@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import savgol_filter
+from scipy.signal import savgol_filter, find_peaks
 
 
 class SignalAnalyzer:
@@ -44,6 +44,12 @@ class SignalAnalyzer:
     #    _, self.data['adc2'] = self.downsample(self.data['x_axis'], self.data['adc2'], num_points
 
         # Peak finding
-        self.data['peak'] = self.data.apply(lambda row: self.find_peaks(row, self.data.mean(), self.data.std()), axis=1)
+        signal = self.data['adc1']
+        peaks = find_peaks(signal, height=1.5)
+        found_peaks = np.zeros(shape=len(signal))
+        for peak in peaks[0]:
+            found_peaks[peak] = 1
+            print(f'Peak found: {peak}')
+        self.data['peaks'] = found_peaks
 
         return self.data

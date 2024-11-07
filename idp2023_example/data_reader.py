@@ -23,8 +23,8 @@ class DataReader:
         self.output_csv_filename = 'detections.csv'
 
     def write_output_csv(self, dataframe):
-        output_data = dataframe.filter(items=['timedelta', 'peak'])
-        print(output_data.head())
+        output_data = dataframe.filter(items=['timedelta', 'peaks'])
+
 
     def get_first_data_chunk(self):
         self.first_data_chunk = pd.read_csv(self.csv_file_path, nrows=self.rows_to_skip)
@@ -57,7 +57,7 @@ class DataReader:
         # Use signal analyzer class for transforming dataframe contents
         signal_analyzer = SignalAnalyzer(self.current_data_chunk)
         self.current_data_chunk = signal_analyzer.transform_data()
-
+        self.write_output_csv(self.current_data_chunk)
         return self.current_data_chunk
 
     def _start(self, set_axis_y=None):
