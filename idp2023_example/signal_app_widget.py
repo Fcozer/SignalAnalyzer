@@ -2,56 +2,46 @@ import numpy as np
 from PySide6.QtCore import QThreadPool, Signal, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 
-from idp2023_example.data_reader import DataReader
+from idp2023_example.signal_analyzer import SignalAnalyzer
 from idp2023_example.signal_window_chart_widget import SignalWindowChartWidget
 from idp2023_example.worker import Worker
 
 
 class SignalAppWidget(QWidget):
-    # Signals for SignalAnalyzer callbacks
-#    chart_set_axis_y = Signal(float, float)
-    chart_update_data = Signal(str, np.ndarray, np.ndarray, int)  # Include series name
+    chart_set_axis_y = Signal(float, float)
+    chart_update_data = Signal(str, np.ndarray, np.ndarray)
+    chart_update_peaks = Signal(str, np.ndarray, np.ndarray)
 
     def __init__(self):
         super().__init__()
 
-        # Create a signal chart
         self.signal_window_chart = SignalWindowChartWidget()
 
-        # Connect the chart to the chart handling signals.
-    #    self.chart_set_axis_y.connect(self.signal_window_chart.set_axis_y)
+        self.chart_set_axis_y.connect(self.signal_window_chart.set_axis_y)
         self.chart_update_data.connect(self.signal_window_chart.replace_array)
+        self.chart_update_peaks.connect(self.signal_window_chart.add_peak_markers)
 
-        # Add buttons to start and stop the signal analyzer.
         self.start_button = QPushButton("Start")
         self.stop_button = QPushButton("Stop")
 
-        # Connect the buttons' pressed-signal to the appropriate methods
         self.start_button.pressed.connect(self.start_signal_analyser)
         self.stop_button.pressed.connect(self.stop_signal_analyser)
 
-        # Create a simple layout for the widgets
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.start_button)
         self.layout.addWidget(self.stop_button)
         self.layout.addWidget(self.signal_window_chart)
 
-        self.window = 100000
-        self.data_reader = DataReader('../group4.csv', 10000, self.window)
-
         self.threadpool = QThreadPool()
+        self.signal_analyzer = SignalAnalyzer("/Users/furkanozer/Desktop/IDP/group4.csv")
 
     def start_signal_analyser(self):
-        """
-        Starts a signal analyzer in a worker thread and connects the appropriate
-        signals.
-        """
         worker = Worker(
-            self.data_reader.start,
-          #  set_chart_axis_y=self.chart_set_axis_y,
+            self.signal_analyzer.start,
+            set_chart_axis_y=self.chart_set_axis_y,
             update_chart=self.chart_update_data,
+            update_chart_peaks=self.chart_update_peaks
         )
-
         worker.signals.result.connect(self.print_output)
         worker.signals.error.connect(self.handle_worker_error)
         self.threadpool.start(worker)
@@ -66,4 +56,4 @@ class SignalAppWidget(QWidget):
 
     @Slot()
     def stop_signal_analyser(self):
-        self.data_reader.stop()
+        self.signal_analyzer.stop()
