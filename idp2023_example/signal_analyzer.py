@@ -15,6 +15,9 @@ class SignalAnalyzer:
         self.x_array = np.zeros((self.window_size,))
         self.y1_array = np.zeros_like(self.x_array)  # Sensor 1 data
         self.y2_array = np.zeros_like(self.x_array)  # Sensor 2 data
+        self.x_array_downsampled = None
+        self.y1_array_downsampled = None
+        self.peaks_y1 = None
 
         self.load_csv_data()
 
@@ -25,6 +28,27 @@ class SignalAnalyzer:
         except Exception as e:
             print(f"Error loading CSV file: {e}")
             self.data = None
+
+    def write_result_csv(self):
+        # Make a starting dataframe with all times and their labels
+        labels = np.full_like(self.x_array_downsampled, 'water', dtype=object)
+        labels[self.peaks_y1] = 'tissue'
+        dataframe = pd.DataFrame().from_dict(
+            {'time': self.x_array_downsampled,
+             'label': labels})
+        # Group by label and duration time
+        dataframe['group'] = (dataframe['label'] != dataframe['label'].shift()).cumsum()
+        result = (dataframe.groupby(['group', 'label'])
+                  .agg(startTime=('time', 'first'),
+                       endTime=('time', 'last'))
+                  .reset_index())
+        # Format result dataframe to follow specs given on ELearn
+        result = result.drop(columns='group')
+        result['startTime'] = result['startTime'].apply(lambda x: "{:.5f}".format(x))
+        result['endTime'] = result['endTime'].apply(lambda x: "{:.5f}".format(x))
+        result = result[['startTime', 'endTime', 'label']]
+
+        result.to_csv('detections.csv', index=False)
 
     def downsample(self, x, y, num_points):
         factor = len(x) // num_points
@@ -42,7 +66,7 @@ class SignalAnalyzer:
     def _generate_data_array(self):
         if self.data is None:
             return
-        self.x_array = np.arange(len(self.data))
+        self.x_array = np.arange(len(self.data))/50000
         self.y1_array = self.baseline_removal(self.data[:, 0])
         self.y2_array = self.baseline_removal(self.data[:, 1])
         num_points = 5000
@@ -60,6 +84,8 @@ class SignalAnalyzer:
             set_chart_axis_y.emit(float(self.y1_array_downsampled.min()), float(self.y1_array_downsampled.max()))
 
         self.detect_and_classify_peaks(update_chart_peaks)
+        print('Writing output CSV...')
+        self.write_result_csv()
 
         if progress_callback:
             progress_callback.emit(100)
@@ -68,17 +94,17 @@ class SignalAnalyzer:
         normalized_y1 = self.y1_array_downsampled / np.max(self.y1_array_downsampled)
         ## normalized_y2 = self.y2_array_downsampled / np.max(self.y2_array_downsampled)
 
-        peaks_y1, _ = find_peaks(
+        self.peaks_y1, _ = find_peaks(
             normalized_y1,
             height=0.015 * np.max(normalized_y1),  ## height and prominence raises level of detecting peaks. You can try to increase those values to see how it works :)
             prominence=0.015,
             distance=10
         )
 
-        peak_x_y1 = self.x_array_downsampled[peaks_y1]
-        peak_y_y1 = self.y1_array_downsampled[peaks_y1]
+        peak_x_y1 = self.x_array_downsampled[self.peaks_y1]
+        peak_y_y1 = self.y1_array_downsampled[self.peaks_y1]
 
         if update_chart_peaks:
             update_chart_peaks.emit("Sensor 1", peak_x_y1, peak_y_y1)
 
-        print(f"Sensor 1 - Total Peaks: {len(peaks_y1)}")
+        print(f"Sensor 1 - Total Peaks: {len(self.peaks_y1)}")

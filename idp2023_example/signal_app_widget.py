@@ -33,7 +33,7 @@ class SignalAppWidget(QWidget):
         self.layout.addWidget(self.signal_window_chart)
 
         self.threadpool = QThreadPool()
-        self.signal_analyzer = SignalAnalyzer("/Users/furkanozer/Desktop/IDP/group4.csv")
+        self.signal_analyzer = SignalAnalyzer("../group4.csv")
 
     def start_signal_analyser(self):
         worker = Worker(
