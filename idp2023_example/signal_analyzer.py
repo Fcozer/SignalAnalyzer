@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from PySide6.QtCore import Signal
 from scipy.signal import find_peaks
+from idp2023_example.peak_counter import PeakCounter
 
 class SignalAnalyzer:
     update_chart_peaks = Signal(str, np.ndarray, np.ndarray)
@@ -18,6 +19,7 @@ class SignalAnalyzer:
         self.x_array_downsampled = None
         self.y1_array_downsampled = None
         self.peaks_y1 = None
+        self.peak_counter = PeakCounter()
 
         self.load_csv_data()
 
@@ -73,7 +75,12 @@ class SignalAnalyzer:
         self.x_array_downsampled, self.y1_array_downsampled = self.downsample(self.x_array, self.y1_array, num_points)
         _, self.y2_array_downsampled = self.downsample(self.x_array, self.y2_array, num_points)
 
-    def start(self, set_chart_axis_y=None, update_chart=None, update_chart_peaks=None, progress_callback=None):
+    def start(self,
+              set_chart_axis_y=None,
+              update_chart=None,
+              update_chart_peaks=None,
+              update_peak_counts=None,
+              progress_callback=None):
         self.running = True
         self._generate_data_array()
 
@@ -84,6 +91,14 @@ class SignalAnalyzer:
             set_chart_axis_y.emit(float(self.y1_array_downsampled.min()), float(self.y1_array_downsampled.max()))
 
         self.detect_and_classify_peaks(update_chart_peaks)
+
+        if update_peak_counts:
+            update_peak_counts.emit(
+                self.peak_counter.large_peaks,
+                self.peak_counter.medium_peaks,
+                self.peak_counter.small_peaks
+            )
+
         print('Writing output CSV...')
         self.write_result_csv()
 
@@ -92,19 +107,24 @@ class SignalAnalyzer:
 
     def detect_and_classify_peaks(self, update_chart_peaks=None):
         normalized_y1 = self.y1_array_downsampled / np.max(self.y1_array_downsampled)
-        ## normalized_y2 = self.y2_array_downsampled / np.max(self.y2_array_downsampled)
 
-        self.peaks_y1, _ = find_peaks(
+        self.peaks_y1, properties = find_peaks(
             normalized_y1,
-            height=0.015 * np.max(normalized_y1),  ## height and prominence raises level of detecting peaks. You can try to increase those values to see how it works :)
+            height=0.015 * np.max(normalized_y1),
             prominence=0.015,
-            distance=10
+            distance=2
         )
 
         peak_x_y1 = self.x_array_downsampled[self.peaks_y1]
         peak_y_y1 = self.y1_array_downsampled[self.peaks_y1]
+        peak_heights_y1 = properties['peak_heights']
+
+        peaks_data = np.column_stack((peak_x_y1, peak_y_y1, peak_heights_y1))
 
         if update_chart_peaks:
-            update_chart_peaks.emit("Sensor 1", peak_x_y1, peak_y_y1)
+            update_chart_peaks.emit("Sensor 1", peak_x_y1, peaks_data)
 
-        print(f"Sensor 1 - Total Peaks: {len(self.peaks_y1)}")
+        self.peak_counter.count_peaks(peak_heights_y1)
+
+    def stop(self):
+        self.running = False
