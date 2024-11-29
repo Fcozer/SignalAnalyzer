@@ -11,6 +11,7 @@ class SignalAppWidget(QWidget):
     chart_set_axis_y = Signal(float, float)
     chart_update_data = Signal(str, np.ndarray, np.ndarray)
     chart_update_peaks = Signal(str, np.ndarray, np.ndarray)
+    chart_update_peak_counts = Signal(int, int, int)
 
     def __init__(self):
         super().__init__()
@@ -20,6 +21,7 @@ class SignalAppWidget(QWidget):
         self.chart_set_axis_y.connect(self.signal_window_chart.set_axis_y)
         self.chart_update_data.connect(self.signal_window_chart.replace_array)
         self.chart_update_peaks.connect(self.signal_window_chart.add_peak_markers)
+        self.chart_update_peak_counts.connect(self.signal_window_chart.update_peak_counts)
 
         self.start_button = QPushButton("Start")
         self.stop_button = QPushButton("Stop")
@@ -33,14 +35,15 @@ class SignalAppWidget(QWidget):
         self.layout.addWidget(self.signal_window_chart)
 
         self.threadpool = QThreadPool()
-        self.signal_analyzer = SignalAnalyzer("/Users/furkanozer/Desktop/IDP/group4.csv")
+        self.signal_analyzer = SignalAnalyzer("../group4.csv")
 
     def start_signal_analyser(self):
         worker = Worker(
             self.signal_analyzer.start,
             set_chart_axis_y=self.chart_set_axis_y,
             update_chart=self.chart_update_data,
-            update_chart_peaks=self.chart_update_peaks
+            update_chart_peaks=self.chart_update_peaks,
+            update_peak_counts=self.chart_update_peak_counts
         )
         worker.signals.result.connect(self.print_output)
         worker.signals.error.connect(self.handle_worker_error)

@@ -4,7 +4,7 @@
     <option name="enabledOnReformat" value="true" />
     <option name="executionMode" value="BINARY" />
     <option name="pathToExecutable" value="C:\Users\Joni\anaconda3\Scripts\black.exe" />
-    <option name="sdkUUID" value="5cdad749-24fc-4351-8b81-a39c40763562" />
+    <option name="sdkName" value="Poetry (IDP2023-example)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (IDP2023-example)" project-jdk-type="Python SDK" />
 </project>
