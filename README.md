@@ -66,11 +66,3 @@ poetry run signal_app
 5. **Performance**: Processes large datasets in under 10 seconds on a typical machine.
 
 ---
-
-## Extending the Application
-To enhance the functionality:
-- Explore additional signal processing libraries like `pywavelets` for noise reduction.
-- Enable real-time processing for live signal data.
-- Integrate advanced peak classification using machine learning techniques.
-- Add functionality to compare detected peaks with a ground truth file.
-
